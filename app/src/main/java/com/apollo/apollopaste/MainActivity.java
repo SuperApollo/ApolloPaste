@@ -74,7 +74,7 @@ public class MainActivity extends Activity {
                         mTvContent.append("\n" + receiveStr);
                         int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
                         if (offset > mTvContent.getHeight()) {
-                            mTvContent.scrollTo(0, offset-mTvContent.getHeight());
+                            mTvContent.scrollTo(0, offset - mTvContent.getHeight());
                         }
 
                         break;
