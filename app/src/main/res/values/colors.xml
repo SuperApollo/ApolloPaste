@@ -6,4 +6,6 @@
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorGray">#666666</color>
     <color name="colorTrap">#000000</color>
+    <color name="colorG">#00F000</color>
+    <color name="colorB">#0000AA</color>
 </resources>

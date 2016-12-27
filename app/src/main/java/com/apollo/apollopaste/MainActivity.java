@@ -2,24 +2,25 @@ package com.apollo.apollopaste;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
@@ -42,6 +43,11 @@ public class MainActivity extends Activity {
     private final int SOCKET_DISCONNECTED = 10087;
     private final int RECEIVE_SOCKET = 10088;
     private final int SOCET_ERR = 10089;
+    private final int START_SERVICE = 10090;
+    private boolean stop;
+    private final String TAG = MainActivity.class.getSimpleName();
+    private TextView mTvContent;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +68,21 @@ public class MainActivity extends Activity {
                         break;
                     case RECEIVE_SOCKET:
                         String receiveStr = (String) msg.obj;
-                        mTvShow.setText("本机ip地址：" + getLocalIpAddress() + "\n" + receiveStr);
+                        String preStr = mTvContent.getText().toString();
+                        mTvContent.setText(preStr + "\n" + receiveStr);
+                        //滚动到最后文字
+                        int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
+                        if (offset > mTvContent.getHeight()) {
+                            mTvContent.scrollTo(0, offset);
+                        }
+
                         break;
                     case SOCET_ERR:
                         String errMsg = (String) msg.obj;
                         mToastUtils.show(mContext, errMsg);
+                        break;
+                    case START_SERVICE:
+                        mToastUtils.show(mContext, "开启服务线程");
                         break;
                 }
 
@@ -75,7 +91,9 @@ public class MainActivity extends Activity {
     }
 
     private void initView() {
-        mTvShow = (TextView) findViewById(R.id.tv_main_show);
+        mTvShow = (TextView) findViewById(R.id.tv_main_ip);
+        mTvContent = (TextView) findViewById(R.id.tv_main_content);
+        mTvContent.setMovementMethod(ScrollingMovementMethod.getInstance());
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
@@ -83,7 +101,11 @@ public class MainActivity extends Activity {
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startSocketServer();
+                try {
+                    startSocketServer();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
         mBtnSend = (Button) findViewById(R.id.btn_main_client);
@@ -124,37 +146,61 @@ public class MainActivity extends Activity {
     /**
      * 服务端
      */
-    private void startSocketServer() {
+    private void startSocketServer() throws IOException {
 
         if (!mThreadStart) {
-            mToastUtils.show(mContext, "开启服务线程");
-            mThreadStart = true;
-            new Thread() {
-                /* (non-Javadoc)
+            new AsyncTask() {
+                @Override
+                protected Object doInBackground(Object[] params) {
+                    Message msg = new Message();
+                    msg.what = START_SERVICE;
+                    mHandler.sendMessage(msg);
+                    mThreadStart = true;
+                    ServerSocket serverSocket = null;
+                    try {
+                        serverSocket = new ServerSocket(8888);
+                        Log.i(TAG, "服务器启动成功...");
+                        Log.i(TAG, "等待客户端连接...");
+                        while (!stop) {
+                            Socket clientSocket = serverSocket.accept();
+                            Log.i(TAG, "客户端 " + clientSocket.getInetAddress() + " 连接进来...");
+                            new ServerThread(clientSocket).start();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    return null;
+                }
+            }.execute();
+
+
+/*            new Thread() {
+                *//* (non-Javadoc)
                  * @see java.lang.Thread#run()
-                 */
+                 *//*
                 @Override
                 public void run() {
                     // TODO Auto-generated method stub
                     try {
                         //创建ServerSocket对象监听8888端口
                         ServerSocket serverSocket = new ServerSocket(8888);
-                        while (true) {
-                            //接收tcp连接返回socket对象
-                            Socket client = serverSocket.accept();
-                            System.out.println("S: Receiving...");
-                            if (client.isConnected()) {
-                                mHandler.sendEmptyMessage(SOCKET_CONNECTED);
-                            } else {
-                                mHandler.sendEmptyMessage(SOCKET_DISCONNECTED);
-                            }
-                            try {
-                                //接收客户端消息
-                                InputStream inputStream = client.getInputStream();
-                                BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-                                // 发送给客户端的消息
-                                PrintWriter out = new PrintWriter(new BufferedWriter(
-                                        new OutputStreamWriter(client.getOutputStream())), true);
+
+                        //接收tcp连接返回socket对象
+                        Socket client = serverSocket.accept();
+                        System.out.println("S: Receiving...");
+                        if (client.isConnected()) {
+                            mHandler.sendEmptyMessage(SOCKET_CONNECTED);
+                        } else {
+                            mHandler.sendEmptyMessage(SOCKET_DISCONNECTED);
+                        }
+                        try {
+                            //接收客户端消息
+                            InputStream inputStream = client.getInputStream();
+                            BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+                            // 发送给客户端的消息
+                            PrintWriter out = new PrintWriter(new BufferedWriter(
+                                    new OutputStreamWriter(client.getOutputStream())), true);
 //                        byte[] byteBuffer = new byte[1024];
 //                        StringBuilder sb = new StringBuilder();
 //                        int temp;
@@ -165,24 +211,21 @@ public class MainActivity extends Activity {
 //                        }
 //                        final String receiveStr = sb.toString();
 //                        Log.i(MainActivity.class.getSimpleName(), receiveStr);
-                                String inString = in.readLine();
-                                Log.i(MainActivity.class.getSimpleName(), inString);
-                                Message msg = new Message();
-                                msg.what = RECEIVE_SOCKET;
-                                msg.obj = inString;
-                                mHandler.sendMessage(msg);
-                                //将接收到的消息发送给客户端
-                                if (!TextUtils.isEmpty(inString)) {
-                                    out.println("from server: " + inString);
-                                    out.flush();
-                                }
-                            }catch (Exception e){
-                                e.printStackTrace();
-                            }finally {
-                                client.close();
-                                serverSocket.close();
+                            String inString = in.readLine();
+                            Log.i(MainActivity.class.getSimpleName(), inString);
+                            Message msg = new Message();
+                            msg.what = RECEIVE_SOCKET;
+                            msg.obj = inString;
+                            mHandler.sendMessage(msg);
+                            //将接收到的消息发送给客户端
+                            if (!TextUtils.isEmpty(inString)) {
+                                out.println("from server: " + inString);
+                                out.flush();
                             }
 
+                            client.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
 
 
@@ -196,7 +239,7 @@ public class MainActivity extends Activity {
                     }
                 }
 
-            }.start();
+            }.start();*/
 
         } else {
             mToastUtils.show(mContext, "服务线程运行中！");
@@ -221,5 +264,63 @@ public class MainActivity extends Activity {
             Log.e("WifiPreference IpAddress", ex.toString());
         }
         return null;
+    }
+
+    /**
+     * 服务器线程
+     */
+    private class ServerThread extends Thread {
+        private InputStream inStream = null;
+        private byte[] buf;
+        private String str = null;
+        PrintWriter out = null;
+        private Socket socket;
+
+        ServerThread(Socket socket) {
+            this.socket = socket;
+            try {
+                //获取输入流
+                this.inStream = socket.getInputStream();
+                // 发送给客户端的消息
+                out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void run() {
+            while (!stop) {
+                this.buf = new byte[512];
+                try {
+                    //读取输入数据（阻塞）
+                    this.inStream.read(this.buf);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //字符编码转换
+                try {
+                    this.str = new String(this.buf, "GB2312").trim();
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                Log.i(TAG, this.str);
+                Message msg = new Message();
+                msg.what = RECEIVE_SOCKET;
+                msg.obj = this.str;
+                mHandler.sendMessage(msg);
+
+                //将接收到的消息发送给客户端
+                if (!TextUtils.isEmpty(this.str)) {
+                    out.println("from server: " + this.str);
+                    out.flush();
+                }
+
+                if (!this.socket.isConnected()) {
+                    Log.i(TAG, "客户端 " + socket.getInetAddress() + " 断开连接...");
+                }
+
+            }
+        }
     }
 }
