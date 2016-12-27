@@ -27,7 +27,7 @@
             android:fadeScrollbars="false"
             android:padding="10dp"
             android:scrollbars="vertical"
-            android:text="在这里显示粘贴板内容"
+            android:text="在这里显示粘贴板内容："
             android:textColor="@color/colorB"
             android:textSize="16sp" />
     </LinearLayout>

@@ -68,12 +68,13 @@ public class MainActivity extends Activity {
                         break;
                     case RECEIVE_SOCKET:
                         String receiveStr = (String) msg.obj;
-                        String preStr = mTvContent.getText().toString();
-                        mTvContent.setText(preStr + "\n" + receiveStr);
+//                        String preStr = mTvContent.getText().toString();
+//                        mTvContent.setText(preStr + "\n" + receiveStr);
                         //滚动到最后文字
+                        mTvContent.append("\n" + receiveStr);
                         int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
                         if (offset > mTvContent.getHeight()) {
-                            mTvContent.scrollTo(0, offset);
+                            mTvContent.scrollTo(0, offset-mTvContent.getHeight());
                         }
 
                         break;
