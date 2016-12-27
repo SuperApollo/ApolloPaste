@@ -7,9 +7,12 @@
 
     <TextView
         android:id="@+id/tv_main_show"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="在这里显示粘贴板内容" />
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="@drawable/bg_edit_text"
+        android:padding="10dp"
+        android:text="在这里显示粘贴板内容"
+        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/et_main_ip"
@@ -26,20 +29,33 @@
         android:hint="请输入监听的端口" />
 
     <Button
-        android:id="@+id/btn_main_start"
+        android:id="@+id/btn_main_accept"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:background="@drawable/selector_button_start"
-        android:text="点击开始"
+        android:text="开始接收"
+        android:textColor="@color/colorWhite"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btn_main_send"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/selector_button_start"
+        android:text="开始接收"
         android:textColor="@color/colorWhite"
         android:textSize="16sp" />
 
     <EditText
         android:id="@+id/et_main_test"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="100dp"
         android:layout_marginTop="15dp"
-        android:hint="在这里测试粘贴" />
+        android:gravity="left"
+        android:padding="10dp"
+        android:background="@drawable/bg_edit_text"
+        android:hint="请输入发送内容" />
 
 </LinearLayout>
