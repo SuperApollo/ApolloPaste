@@ -29,22 +29,22 @@
         android:hint="请输入监听的端口" />
 
     <Button
-        android:id="@+id/btn_main_accept"
+        android:id="@+id/btn_main_server"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:background="@drawable/selector_button_start"
-        android:text="开始接收"
+        android:text="服务端(接收)"
         android:textColor="@color/colorWhite"
         android:textSize="16sp" />
 
     <Button
-        android:id="@+id/btn_main_send"
+        android:id="@+id/btn_main_client"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:background="@drawable/selector_button_start"
-        android:text="开始发送"
+        android:text="客户端(发送)"
         android:textColor="@color/colorWhite"
         android:textSize="16sp" />
 
@@ -53,9 +53,9 @@
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:layout_marginTop="15dp"
-        android:gravity="left"
-        android:padding="10dp"
         android:background="@drawable/bg_edit_text"
-        android:hint="请输入发送内容" />
+        android:gravity="left"
+        android:hint="请输入发送内容"
+        android:padding="10dp" />
 
 </LinearLayout>
