@@ -29,7 +29,8 @@
         android:id="@+id/btn_main_start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_button_start"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/selector_button_start"
         android:text="点击开始"
         android:textColor="@color/colorWhite"
         android:textSize="16sp" />
