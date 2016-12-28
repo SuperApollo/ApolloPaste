@@ -38,7 +38,7 @@
                     android:id="@+id/lv_main_content"
                     android:layout_width="match_parent"
                     android:layout_height="150dp"
-                    android:cacheColorHint="@color/colorTrap" />
+                    android:divider="@null" />
             </LinearLayout>
 
             <Button
