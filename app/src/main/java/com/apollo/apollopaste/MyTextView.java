@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewParent;
 import android.widget.TextView;
@@ -14,6 +15,7 @@ import android.widget.TextView;
 
 public class MyTextView extends TextView {
     private OnTextViewListner onTextViewListner;
+    private final String TAG = MyTextView.class.getSimpleName();
 
     public OnTextViewListner getOnTextViewListner() {
         return onTextViewListner;
@@ -50,6 +52,7 @@ public class MyTextView extends TextView {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
+                Log.i(TAG, event.getY() + "=========");
                 ViewParent parent = getParent();
                 if (parent != null) {
                     parent.requestDisallowInterceptTouchEvent(true);

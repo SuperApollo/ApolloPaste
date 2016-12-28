@@ -95,10 +95,10 @@ public class SocketService extends Service {
                     Log.i(TAG, "等待客户端连接...");
                     while (!mServerStop) {
                         Socket clientSocket = serverSocket.accept();
-                        Log.i(TAG, "客户端 " + clientSocket.getInetAddress() + " 连接进来...");
+                        Log.i(TAG, "客户端 " + clientSocket.getInetAddress() + " 成功接入...");
                         Message message = new Message();
                         message.what = CLIENT_ENTER;
-                        message.obj = clientSocket.getInetAddress() + "连接成功";
+                        message.obj = clientSocket.getInetAddress() + " 成功接入";
                         mHandler.sendMessage(message);
                         mClientList.add(clientSocket);//保存客户端
                         mExecutorService.execute(new ServerThread(clientSocket));

@@ -5,6 +5,7 @@ import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ScrollView;
 
 /**
@@ -13,6 +14,11 @@ import android.widget.ScrollView;
 
 public class MyScrollView extends ScrollView {
     private final String TAG = MyScrollView.class.getSimpleName();
+    private View childView;
+
+    public void setChildView(View childView) {
+        this.childView = childView;
+    }
 
     public MyScrollView(Context context) {
         super(context);
@@ -33,15 +39,33 @@ public class MyScrollView extends ScrollView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                break;
-            case MotionEvent.ACTION_MOVE:
-                break;
-            case MotionEvent.ACTION_UP:
-                break;
+        if ((childView != null) && checkArea(childView, ev)) {
+            return false;
+        } else {
+            return super.onInterceptTouchEvent(ev);
         }
-
-        return super.onInterceptTouchEvent(ev);
     }
+
+    /**
+     * 测试view是否在点击范围内
+     *
+     * @param v
+     * @return
+     */
+    private boolean checkArea(View v, MotionEvent event) {
+        float x = event.getRawX();
+        float y = event.getRawY();
+        int[] locate = new int[2];
+        v.getLocationOnScreen(locate);
+        int l = locate[0];
+        int r = l + v.getWidth();
+        int t = locate[1];
+        int b = t + v.getHeight();
+        boolean tag = false;
+        if ((l < x) && (x < r) && (t < y) && (y < b)) {
+            tag = true;
+        }
+        return tag;
+    }
+
 }

@@ -119,7 +119,7 @@ public class MainActivity extends Activity {
         mScroll = (MyScrollView) findViewById(R.id.scroll_main);
         mTvShow = (TextView) findViewById(R.id.tv_main_ip);
         mTvContent = (MyTextView) findViewById(R.id.tv_main_content);
-
+        mScroll.setChildView(mTvContent);
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
