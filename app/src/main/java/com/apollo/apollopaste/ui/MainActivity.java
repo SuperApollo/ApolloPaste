@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.view.menu.MenuAdapter;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -14,6 +15,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.apollo.apollopaste.adapter.ContentAdapter;
+import com.apollo.apollopaste.bean.ContentBean;
+import com.apollo.apollopaste.widgets.MyListview;
 import com.apollo.apollopaste.widgets.MyScrollView;
 import com.apollo.apollopaste.widgets.MyTextView;
 import com.apollo.apollopaste.R;
@@ -32,7 +36,9 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 import de.greenrobot.event.EventBus;
 import de.greenrobot.event.Subscribe;
@@ -57,12 +63,13 @@ public class MainActivity extends Activity {
     private static final int SOCKET_ENTER = 10091;
     private boolean stop;
     private final String TAG = MainActivity.class.getSimpleName();
-    private MyTextView mTvContent;
+    private MyListview mLvContent;
     private Button mBtnConnect;
     private Socket mSocketClient;
     private boolean mConnectToServer;
     private MyScrollView mScroll;
-
+    private List<ContentBean> mDatas = new ArrayList<>();
+    private ContentAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,14 +94,13 @@ public class MainActivity extends Activity {
                         break;
                     case RECEIVE_SOCKET:
                         String receiveStr = (String) msg.obj;
-//                        String preStr = mTvContent.getText().toString();
-//                        mTvContent.setText(preStr + "\n" + receiveStr);
+//                        String preStr = mLvContent.getText().toString();
+//                        mLvContent.setText(preStr + "\n" + receiveStr);
                         //滚动到最后文字
-                        mTvContent.append("\n" + receiveStr);
-                        int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
-                        if (offset > mTvContent.getHeight()) {
-                            mTvContent.scrollTo(0, offset - mTvContent.getHeight());
-                        }
+                        mDatas.add(new ContentBean(receiveStr));
+                        mAdapter.notifyDataSetChanged();
+                        if (mDatas.size() > 0)
+                            mLvContent.setSelection(mDatas.size() - 1);
 
                         break;
                     case SOCET_ERR:
@@ -123,8 +129,13 @@ public class MainActivity extends Activity {
     private void initView() {
         mScroll = (MyScrollView) findViewById(R.id.scroll_main);
         mTvShow = (TextView) findViewById(R.id.tv_main_ip);
-        mTvContent = (MyTextView) findViewById(R.id.tv_main_content);
-        mScroll.setChildView(mTvContent);
+        mLvContent = (MyListview) findViewById(R.id.lv_main_content);
+        ContentBean firstBean = new ContentBean("以下是复制到粘贴板的内容：");
+        mDatas.add(firstBean);
+        mAdapter = new ContentAdapter(mDatas, this);
+        mLvContent.setAdapter(mAdapter);
+
+        mScroll.setChildView(mLvContent);
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
@@ -431,12 +442,12 @@ public class MainActivity extends Activity {
      */
     @Subscribe(threadMode = ThreadMode.MainThread)
     public void helloEventBus(String message) {
-        //滚动到最后文字
-        mTvContent.append("\n" + message);
-        int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
-        if (offset > mTvContent.getHeight()) {
-            mTvContent.scrollTo(0, offset - mTvContent.getHeight());
-        }
+        ContentBean bean = new ContentBean(message);
+        mDatas.add(bean);
+        mAdapter.notifyDataSetChanged();
+        if (mDatas.size() > 0)
+            mLvContent.setSelection(mDatas.size() - 1);
+
     }
 
 }

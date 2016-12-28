@@ -34,17 +34,11 @@
                     android:textColor="@color/colorG"
                     android:textSize="16sp" />
 
-                <com.apollo.apollopaste.widgets.MyTextView
-                    android:id="@+id/tv_main_content"
+                <com.apollo.apollopaste.widgets.MyListview
+                    android:id="@+id/lv_main_content"
                     android:layout_width="match_parent"
                     android:layout_height="150dp"
-                    android:fadeScrollbars="false"
-                    android:paddingLeft="10dp"
-                    android:paddingRight="10dp"
-                    android:scrollbars="vertical"
-                    android:text="以下为粘贴板内容："
-                    android:textColor="@color/colorB"
-                    android:textSize="16sp" />
+                    android:cacheColorHint="@color/colorTrap" />
             </LinearLayout>
 
             <Button
