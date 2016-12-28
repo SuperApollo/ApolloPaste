@@ -5,9 +5,12 @@
     android:orientation="vertical"
     android:padding="15dp">
 
-    <ScrollView
+    <com.apollo.apollopaste.MyScrollView
+        android:id="@+id/scroll_main"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clickable="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,7 +32,7 @@
                     android:textColor="@color/colorG"
                     android:textSize="16sp" />
 
-                <TextView
+                <com.apollo.apollopaste.MyTextView
                     android:id="@+id/tv_main_content"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -65,6 +68,15 @@
                 android:layout_marginTop="15dp"
                 android:hint="请输入服务器端口" />
 
+            <Button
+                android:id="@+id/btn_main_connect"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/selector_button_start"
+                android:text="连接"
+                android:textColor="@color/colorWhite"
+                android:textSize="16sp" />
 
             <EditText
                 android:id="@+id/et_main_test"
@@ -86,7 +98,7 @@
                 android:textColor="@color/colorWhite"
                 android:textSize="16sp" />
         </LinearLayout>
-    </ScrollView>
+    </com.apollo.apollopaste.MyScrollView>
 
 
 </LinearLayout>

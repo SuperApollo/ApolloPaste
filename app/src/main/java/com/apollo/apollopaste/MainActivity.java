@@ -13,10 +13,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
     private EditText mEtIp;
     private EditText mEtPort;
     private Button mBtnStart;
-    private EditText mEtTest;
+    private EditText mEtSend;
     private Button mBtnSend;
     private Context mContext;
     private ToastUtils mToastUtils;
@@ -52,7 +52,11 @@ public class MainActivity extends Activity {
     private static final int SOCKET_ENTER = 10091;
     private boolean stop;
     private final String TAG = MainActivity.class.getSimpleName();
-    private TextView mTvContent;
+    private MyTextView mTvContent;
+    private Button mBtnConnect;
+    private Socket mSocketClient;
+    private boolean mConnectToServer;
+    private MyScrollView mScroll;
 
 
     @Override
@@ -69,6 +73,9 @@ public class MainActivity extends Activity {
                 switch (msg.what) {
                     case SOCKET_CONNECTED:
                         mToastUtils.show(mContext, "连接成功！");
+                        mConnectToServer = true;
+                        mBtnConnect.setText("断开连接");
+
                         break;
                     case SOCKET_DISCONNECTED:
                         mToastUtils.show(mContext, "连接失败！");
@@ -109,13 +116,14 @@ public class MainActivity extends Activity {
     }
 
     private void initView() {
+        mScroll = (MyScrollView) findViewById(R.id.scroll_main);
         mTvShow = (TextView) findViewById(R.id.tv_main_ip);
-        mTvContent = (TextView) findViewById(R.id.tv_main_content);
-        mTvContent.setMovementMethod(ScrollingMovementMethod.getInstance());
+        mTvContent = (MyTextView) findViewById(R.id.tv_main_content);
+
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
-        mEtTest = (EditText) findViewById(R.id.et_main_test);
+        mEtSend = (EditText) findViewById(R.id.et_main_test);
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -128,21 +136,71 @@ public class MainActivity extends Activity {
                 startService(intent);
             }
         });
+        mBtnConnect = (Button) findViewById(R.id.btn_main_connect);
+        mBtnConnect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!mConnectToServer) {
+                    connectToServer();
+                } else {//断开连接
+                    if (mSocketClient != null) {
+                        try {
+                            mSocketClient.close();
+                            mConnectToServer = false;
+                            mBtnConnect.setText("连接");
+                            mToastUtils.show(mContext, "断开成功");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            mToastUtils.show(mContext, e.getMessage());
+                        }
+                    }
+                }
+
+            }
+        });
         mBtnSend = (Button) findViewById(R.id.btn_main_client);
         mBtnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startSocketClient();
-//                mToastUtils.show(mContext, "还没完成啦");
+                if (mConnectToServer)
+                    sendMsg();
+                else
+                    mToastUtils.show(mContext, "请先连接服务器");
             }
         });
+
+
         mTvShow.setText("本机地址：" + getLocalIpAddress() + " : 8888");
     }
 
+
     /**
-     * 客户端
+     * 客户端发消息
      */
-    private void startSocketClient() {
+    private void sendMsg() {
+        final String sendMsg = mEtSend.getText().toString().trim();
+        //从Socket对象获得输出流
+        try {
+            if (mSocketClient != null && mSocketClient.isConnected()) {
+                java.io.OutputStream outputStream = mSocketClient.getOutputStream();
+                PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream, "GB2312")));
+                out.println(sendMsg);
+                out.flush();
+                mEtSend.setText("");
+            } else {
+                mToastUtils.show(mContext, "连接已断开");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            mToastUtils.show(mContext, e.getMessage());
+        }
+    }
+
+    /**
+     * 客户端连接到服务器
+     */
+    private void connectToServer() {
         final String ip = mEtIp.getText().toString().trim();
         String portStr = mEtPort.getText().toString().trim();
         if (TextUtils.isEmpty(ip) || TextUtils.isEmpty(portStr)) {
@@ -150,22 +208,16 @@ public class MainActivity extends Activity {
             return;
         }
         final int port = Integer.valueOf(portStr);
-        final String sendMsg = mEtTest.getText().toString().trim();
+
         new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] params) {
                 try {
-                    Socket socket = new Socket(ip, port);
+                    mSocketClient = new Socket(ip, port);
                     Message msg = new Message();
                     msg.what = SOCKET_CONNECTED;
-                    msg.obj = ip + "连接成功";
+                    msg.obj = "成功连接到 " + ip;
                     mHandler.sendMessage(msg);
-                    //从Socket对象获得输出流
-                    java.io.OutputStream outputStream = socket.getOutputStream();
-                    PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream,"GB2312")));
-                    out.println(sendMsg);
-                    out.close();
-                    socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                     Message msg = new Message();
@@ -181,7 +233,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 服务端
+     * 开启服务器
      */
     private void startSocketServer() throws IOException {
 
@@ -283,25 +335,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    //获取本地IP
-    public static String getLocalIpAddress() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface
-                    .getNetworkInterfaces(); en.hasMoreElements(); ) {
-                NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf
-                        .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
-                        return inetAddress.getHostAddress().toString();
-                    }
-                }
-            }
-        } catch (SocketException ex) {
-            Log.e("WifiPreference IpAddress", ex.toString());
-        }
-        return null;
-    }
 
     /**
      * 服务器线程
@@ -359,6 +392,31 @@ public class MainActivity extends Activity {
 
             }
         }
+    }
+
+
+    /**
+     * 获取本地IP
+     *
+     * @return
+     */
+    public static String getLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface
+                    .getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf
+                        .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
+                        return inetAddress.getHostAddress().toString();
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            Log.e("WifiPreference IpAddress", ex.toString());
+        }
+        return null;
     }
 
     /**
