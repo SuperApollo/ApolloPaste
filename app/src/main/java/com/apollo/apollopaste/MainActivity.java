@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     private final int RECEIVE_SOCKET = 10088;
     private final int SOCET_ERR = 10089;
     private final int START_SERVICE = 10090;
+    private static final int SOCKET_ENTER = 10091;
     private boolean stop;
     private final String TAG = MainActivity.class.getSimpleName();
     private TextView mTvContent;
@@ -91,6 +92,10 @@ public class MainActivity extends Activity {
                     case START_SERVICE:
                         mToastUtils.show(mContext, "开启服务线程");
                         break;
+                    case SOCKET_ENTER:
+                        String str = (String) msg.obj;
+                        mToastUtils.show(mContext, str);
+                        break;
                 }
 
             }
@@ -127,8 +132,8 @@ public class MainActivity extends Activity {
         mBtnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                startSocketClient();
-                mToastUtils.show(mContext, "还没完成啦");
+                startSocketClient();
+//                mToastUtils.show(mContext, "还没完成啦");
             }
         });
         mTvShow.setText("本机地址：" + getLocalIpAddress() + " : 8888");
@@ -138,25 +143,41 @@ public class MainActivity extends Activity {
      * 客户端
      */
     private void startSocketClient() {
-        String ip = mEtIp.getText().toString().trim();
-        int port = Integer.valueOf(mEtPort.getText().toString().trim());
-        try {
-            Socket socket = new Socket(ip, port);
-            InputStream inputStream = new FileInputStream("F://test.txt");
-            //从Socket对象获得输出流
-            java.io.OutputStream outputStream = socket.getOutputStream();
-            int temp = 0;
-            byte[] buffer = new byte[1024];
-            //向输出流中写要发送的数据
-            while ((temp = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, temp);
-                System.out.println(new String(buffer, 0, temp));
-            }
-            outputStream.flush();
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        final String ip = mEtIp.getText().toString().trim();
+        String portStr = mEtPort.getText().toString().trim();
+        if (TextUtils.isEmpty(ip) || TextUtils.isEmpty(portStr)) {
+            mToastUtils.show(mContext, "服务器地址不能为空");
+            return;
         }
+        final int port = Integer.valueOf(portStr);
+        final String sendMsg = mEtTest.getText().toString().trim();
+        new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] params) {
+                try {
+                    Socket socket = new Socket(ip, port);
+                    Message msg = new Message();
+                    msg.what = SOCKET_CONNECTED;
+                    msg.obj = ip + "连接成功";
+                    mHandler.sendMessage(msg);
+                    //从Socket对象获得输出流
+                    java.io.OutputStream outputStream = socket.getOutputStream();
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream,"GB2312")));
+                    out.println(sendMsg);
+                    out.close();
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Message msg = new Message();
+                    msg.what = SOCET_ERR;
+                    msg.obj = e.getMessage();
+                    mHandler.sendMessage(msg);
+                }
+                return null;
+            }
+        }.execute();
+
+
     }
 
     /**

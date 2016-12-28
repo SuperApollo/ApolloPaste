@@ -5,76 +5,88 @@
     android:orientation="vertical"
     android:padding="15dp">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:background="@drawable/bg_edit_text"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/tv_main_ip"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="本机ip"
-            android:textColor="@color/colorG"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/tv_main_content"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fadeScrollbars="false"
-            android:padding="10dp"
-            android:scrollbars="vertical"
-            android:text="以下为粘贴板内容："
-            android:textColor="@color/colorB"
-            android:textSize="16sp" />
-    </LinearLayout>
+            android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_main_server"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/selector_button_start"
-        android:text="服务端(接收)"
-        android:textColor="@color/colorWhite"
-        android:textSize="16sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:background="@drawable/bg_edit_text"
+                android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/et_main_ip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:hint="请输入服务器ip" />
+                <TextView
+                    android:id="@+id/tv_main_ip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:text="本机ip"
+                    android:textColor="@color/colorG"
+                    android:textSize="16sp" />
 
-    <EditText
-        android:id="@+id/et_main_port"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:hint="请输入服务器端口" />
+                <TextView
+                    android:id="@+id/tv_main_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fadeScrollbars="false"
+                    android:padding="10dp"
+                    android:scrollbars="vertical"
+                    android:text="以下为粘贴板内容："
+                    android:textColor="@color/colorB"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_main_server"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/selector_button_start"
+                android:text="服务端(接收)"
+                android:textColor="@color/colorWhite"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/et_main_ip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:hint="请输入服务器ip" />
+
+            <EditText
+                android:id="@+id/et_main_port"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:hint="请输入服务器端口" />
 
 
-    <EditText
-        android:id="@+id/et_main_test"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/bg_edit_text"
-        android:gravity="left"
-        android:hint="请输入发送内容"
-        android:padding="10dp" />
+            <EditText
+                android:id="@+id/et_main_test"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/bg_edit_text"
+                android:gravity="left"
+                android:hint="请输入发送内容"
+                android:padding="10dp" />
 
-    <Button
-        android:id="@+id/btn_main_client"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/selector_button_start"
-        android:text="客户端(发送)"
-        android:textColor="@color/colorWhite"
-        android:textSize="16sp" />
+            <Button
+                android:id="@+id/btn_main_client"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/selector_button_start"
+                android:text="客户端(发送)"
+                android:textColor="@color/colorWhite"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </ScrollView>
+
 
 </LinearLayout>
