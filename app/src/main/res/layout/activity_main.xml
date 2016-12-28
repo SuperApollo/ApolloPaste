@@ -38,14 +38,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:hint="请输入监听的ip" />
+        android:hint="请输入服务器ip" />
 
     <EditText
         android:id="@+id/et_main_port"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:hint="请输入监听的端口" />
+        android:hint="请输入服务器端口" />
 
     <Button
         android:id="@+id/btn_main_server"

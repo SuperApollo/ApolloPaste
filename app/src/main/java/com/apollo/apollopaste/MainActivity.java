@@ -121,17 +121,17 @@ public class MainActivity extends Activity {
 //                }
                 Intent intent = new Intent(mContext, SocketService.class);
                 startService(intent);
-
             }
         });
         mBtnSend = (Button) findViewById(R.id.btn_main_client);
         mBtnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startSocketClient();
+//                startSocketClient();
+                mToastUtils.show(mContext, "还没完成啦");
             }
         });
-        mTvShow.setText("本机地址：" + getLocalIpAddress()+":8888");
+        mTvShow.setText("本机地址：" + getLocalIpAddress() + " : 8888");
     }
 
     /**
