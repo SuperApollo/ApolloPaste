@@ -2,6 +2,7 @@ package com.apollo.apollopaste;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -28,6 +29,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+import de.greenrobot.event.EventBus;
+import de.greenrobot.event.Subscribe;
+import de.greenrobot.event.ThreadMode;
+
 public class MainActivity extends Activity {
     private TextView mTvShow;
     private EditText mEtIp;
@@ -53,6 +58,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        EventBus.getDefault().register(this);//注册eventbus
         mContext = BaseApplication.getContext();
         mToastUtils = ToastUtils.shareInstance();
         initView();
@@ -91,6 +97,12 @@ public class MainActivity extends Activity {
         };
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
+
     private void initView() {
         mTvShow = (TextView) findViewById(R.id.tv_main_ip);
         mTvContent = (TextView) findViewById(R.id.tv_main_content);
@@ -102,11 +114,14 @@ public class MainActivity extends Activity {
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    startSocketServer();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    startSocketServer();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+                Intent intent = new Intent(mContext, SocketService.class);
+                startService(intent);
+
             }
         });
         mBtnSend = (Button) findViewById(R.id.btn_main_client);
@@ -116,7 +131,7 @@ public class MainActivity extends Activity {
                 startSocketClient();
             }
         });
-        mTvShow.setText("本机ip地址：" + getLocalIpAddress());
+        mTvShow.setText("本机地址：" + getLocalIpAddress()+":8888");
     }
 
     /**
@@ -324,4 +339,20 @@ public class MainActivity extends Activity {
             }
         }
     }
+
+    /**
+     * 定义订阅者，接收eventbus发布者的消息
+     *
+     * @param message
+     */
+    @Subscribe(threadMode = ThreadMode.MainThread)
+    public void helloEventBus(String message) {
+        //滚动到最后文字
+        mTvContent.append("\n" + message);
+        int offset = mTvContent.getLineCount() * mTvContent.getLineHeight();
+        if (offset > mTvContent.getHeight()) {
+            mTvContent.scrollTo(0, offset - mTvContent.getHeight());
+        }
+    }
+
 }

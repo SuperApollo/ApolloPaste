@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="在这里显示本机ip"
+            android:text="本机ip"
             android:textColor="@color/colorG"
             android:textSize="16sp" />
 
@@ -27,7 +27,7 @@
             android:fadeScrollbars="false"
             android:padding="10dp"
             android:scrollbars="vertical"
-            android:text="在这里显示粘贴板内容："
+            android:text="以下为粘贴板内容："
             android:textColor="@color/colorB"
             android:textSize="16sp" />
     </LinearLayout>
