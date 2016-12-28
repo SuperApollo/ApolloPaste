@@ -1,4 +1,4 @@
-package com.apollo.apollopaste;
+package com.apollo.apollopaste.ui;
 
 import android.app.Activity;
 import android.content.Context;
@@ -8,13 +8,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.apollo.apollopaste.widgets.MyScrollView;
+import com.apollo.apollopaste.widgets.MyTextView;
+import com.apollo.apollopaste.R;
+import com.apollo.apollopaste.service.SocketService;
+import com.apollo.apollopaste.utils.ToastUtils;
+import com.apollo.apollopaste.base.BaseApplication;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

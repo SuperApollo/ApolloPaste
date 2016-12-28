@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:padding="15dp">
 
-    <com.apollo.apollopaste.MyScrollView
+    <com.apollo.apollopaste.widgets.MyScrollView
         android:id="@+id/scroll_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -34,7 +34,7 @@
                     android:textColor="@color/colorG"
                     android:textSize="16sp" />
 
-                <com.apollo.apollopaste.MyTextView
+                <com.apollo.apollopaste.widgets.MyTextView
                     android:id="@+id/tv_main_content"
                     android:layout_width="match_parent"
                     android:layout_height="150dp"
@@ -101,7 +101,7 @@
                 android:textColor="@color/colorWhite"
                 android:textSize="16sp" />
         </LinearLayout>
-    </com.apollo.apollopaste.MyScrollView>
+    </com.apollo.apollopaste.widgets.MyScrollView>
 
 
 </LinearLayout>

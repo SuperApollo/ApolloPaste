@@ -1,4 +1,4 @@
-package com.apollo.apollopaste;
+package com.apollo.apollopaste.service;
 
 import android.app.Service;
 import android.content.Context;
@@ -11,6 +11,8 @@ import android.support.annotation.Nullable;
 import android.text.ClipboardManager;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.apollo.apollopaste.utils.ToastUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;

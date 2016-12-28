@@ -1,4 +1,4 @@
-package com.apollo.apollopaste;
+package com.apollo.apollopaste.utils;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -6,6 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.apollo.apollopaste.R;
 
 /****
  * Toast 工具类

@@ -1,8 +1,6 @@
-package com.apollo.apollopaste;
+package com.apollo.apollopaste.widgets;
 
 import android.content.Context;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,15 +24,6 @@ public class MyScrollView extends ScrollView {
 
     public MyScrollView(Context context, AttributeSet attrs) {
         super(context, attrs);
-    }
-
-    public MyScrollView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public MyScrollView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
     }
 
     @Override

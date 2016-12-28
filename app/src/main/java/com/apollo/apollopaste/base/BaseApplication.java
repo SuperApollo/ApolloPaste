@@ -1,4 +1,4 @@
-package com.apollo.apollopaste;
+package com.apollo.apollopaste.base;
 
 import android.app.Application;
 import android.content.Context;
