@@ -32,6 +32,15 @@
             android:textSize="16sp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btn_main_server"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/selector_button_start"
+        android:text="服务端(接收)"
+        android:textColor="@color/colorWhite"
+        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/et_main_ip"
@@ -47,25 +56,6 @@
         android:layout_marginTop="15dp"
         android:hint="请输入服务器端口" />
 
-    <Button
-        android:id="@+id/btn_main_server"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/selector_button_start"
-        android:text="服务端(接收)"
-        android:textColor="@color/colorWhite"
-        android:textSize="16sp" />
-
-    <Button
-        android:id="@+id/btn_main_client"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/selector_button_start"
-        android:text="客户端(发送)"
-        android:textColor="@color/colorWhite"
-        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/et_main_test"
@@ -76,5 +66,15 @@
         android:gravity="left"
         android:hint="请输入发送内容"
         android:padding="10dp" />
+
+    <Button
+        android:id="@+id/btn_main_client"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/selector_button_start"
+        android:text="客户端(发送)"
+        android:textColor="@color/colorWhite"
+        android:textSize="16sp" />
 
 </LinearLayout>
