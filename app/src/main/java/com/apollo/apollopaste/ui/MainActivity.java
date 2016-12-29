@@ -7,7 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.view.menu.MenuAdapter;
+import android.text.ClipboardManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -18,10 +18,10 @@ import android.widget.TextView;
 import com.apollo.apollopaste.adapter.ContentAdapter;
 import com.apollo.apollopaste.bean.ContentBean;
 import com.apollo.apollopaste.constants.AppConfig;
+import com.apollo.apollopaste.utils.AppUtil;
 import com.apollo.apollopaste.utils.SharedPreferencesUtils;
 import com.apollo.apollopaste.widgets.MyListview;
 import com.apollo.apollopaste.widgets.MyScrollView;
-import com.apollo.apollopaste.widgets.MyTextView;
 import com.apollo.apollopaste.R;
 import com.apollo.apollopaste.service.SocketService;
 import com.apollo.apollopaste.utils.ToastUtils;
@@ -30,9 +30,11 @@ import com.apollo.apollopaste.base.BaseApplication;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -44,6 +46,8 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import de.greenrobot.event.EventBus;
 import de.greenrobot.event.Subscribe;
@@ -62,10 +66,12 @@ public class MainActivity extends Activity {
     private Handler mHandler;
     private final int SOCKET_CONNECTED = 10086;
     private final int SOCKET_DISCONNECTED = 10087;
-    private final int RECEIVE_SOCKET = 10088;
+    private final int RECEIVE_CLIENT_MSG = 10088;
     private final int SOCET_ERR = 10089;
     private final int START_SERVICE = 10090;
     private static final int SOCKET_ENTER = 10091;
+    private final int RECEIVE_SERVER_MSG = 10092;
+    private final int COPY_TO_BOARD = 10093;
     private boolean stop;
     private final String TAG = MainActivity.class.getSimpleName();
     private MyListview mLvContent;
@@ -76,6 +82,8 @@ public class MainActivity extends Activity {
     private List<ContentBean> mDatas = new ArrayList<>();
     private ContentAdapter mAdapter;
     private boolean isServerOn;
+    private ExecutorService mExecutor;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +106,7 @@ public class MainActivity extends Activity {
                     case SOCKET_DISCONNECTED:
                         mToastUtils.show(mContext, "连接失败！");
                         break;
-                    case RECEIVE_SOCKET:
+                    case RECEIVE_CLIENT_MSG://收到客户端消息
                         String receiveStr = (String) msg.obj;
 //                        String preStr = mLvContent.getText().toString();
 //                        mLvContent.setText(preStr + "\n" + receiveStr);
@@ -120,10 +128,36 @@ public class MainActivity extends Activity {
                         String str = (String) msg.obj;
                         mToastUtils.show(mContext, str);
                         break;
+                    case RECEIVE_SERVER_MSG://收到服务端消息
+                        String clientMsg = (String) msg.obj;
+                        ContentBean bean = new ContentBean(clientMsg);
+                        mDatas.add(bean);
+                        mAdapter.notifyDataSetChanged();
+                        mLvContent.setSelection(mDatas.size() - 1);
+                        break;
+                    case COPY_TO_BOARD:
+                        String copyContent = (String) msg.obj;
+                        ClipboardManager cb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                        if (!TextUtils.isEmpty(copyContent)) {
+                            cb.setText(copyContent);
+                            Log.i(TAG, "复制到粘贴板...");
+                        }
+                        break;
                 }
 
             }
         };
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        //关闭线程池
+        if (mExecutor != null){
+            mExecutor.shutdownNow();
+            mExecutor = null;
+        }
+
     }
 
     @Override
@@ -145,6 +179,12 @@ public class MainActivity extends Activity {
 
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
+        String ip = SharedPreferencesUtils.getString(AppConfig.LAST_CONNECTED_IP);
+        int port = SharedPreferencesUtils.getInt(AppConfig.LAST_CONNECTED_PORT);
+        if (!TextUtils.isEmpty(ip))
+            mEtIp.setText(ip);
+        if (port != 0)
+            mEtPort.setText(port + "");
 
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
         mBtnStart.setText(isServerOn ? "关闭本地服务器" : "开启本地服务器");
@@ -152,15 +192,17 @@ public class MainActivity extends Activity {
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isServerOn = SharedPreferencesUtils.getBoolean(AppConfig.LOCAL_SERVER_ON, false);
-                if (isServerOn) {//关闭本地服务器
-
+                if (AppUtil.isServiceRunning(mContext, SocketService.class.getName())) {
+                    //关闭本地服务器
+                    AppUtil.stopRunningService(mContext, SocketService.class.getName());
                     mBtnStart.setText("开启本地服务器");
-                } else {//打开本地服务器
+                } else {
+                    //打开本地服务器
                     Intent intent = new Intent(mContext, SocketService.class);
                     startService(intent);
                     mBtnStart.setText("关闭本地服务器");
                 }
+
 
             }
         });
@@ -182,6 +224,7 @@ public class MainActivity extends Activity {
                             mToastUtils.show(mContext, e.getMessage());
                         }
                     }
+
                 }
 
             }
@@ -237,28 +280,81 @@ public class MainActivity extends Activity {
         }
         final int port = Integer.valueOf(portStr);
 
-        new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] params) {
-                try {
-                    mSocketClient = new Socket(ip, port);
-                    Message msg = new Message();
-                    msg.what = SOCKET_CONNECTED;
-                    msg.obj = "成功连接到 " + ip;
-                    mHandler.sendMessage(msg);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Message msg = new Message();
-                    msg.what = SOCET_ERR;
-                    msg.obj = e.getMessage();
-                    mHandler.sendMessage(msg);
-                }
-                return null;
-            }
-        }.execute();
-
+        //创建线程池
+        if (mExecutor == null)
+            mExecutor = Executors.newCachedThreadPool();
+        mExecutor.execute(new ClientThread(ip, port));
 
     }
+
+    /**
+     * 客户端线程
+     */
+    private class ClientThread implements Runnable {
+        String ip;
+        int port;
+
+        public ClientThread(String ip, int port) {
+            this.ip = ip;
+            this.port = port;
+        }
+
+        @Override
+        public void run() {
+            try {
+                mSocketClient = new Socket(ip, port);
+                Message msg = new Message();
+                msg.what = SOCKET_CONNECTED;
+                msg.obj = "成功连接到 " + ip;
+                mHandler.sendMessage(msg);
+                SharedPreferencesUtils.putString(AppConfig.LAST_CONNECTED_IP, ip);
+                SharedPreferencesUtils.putInt(AppConfig.LAST_CONNECTED_PORT, port);
+                receiveMsg();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Message msg = new Message();
+                msg.what = SOCET_ERR;
+                msg.obj = e.getMessage();
+                mHandler.sendMessage(msg);
+            }
+
+        }
+
+        /**
+         * 客户端接收服务端消息
+         */
+        private void receiveMsg() {
+            try {
+                while (true) {
+                    if (!mSocketClient.isConnected()) {
+                        if (mSocketClient.isConnected()) {
+                            if (!mSocketClient.isInputShutdown()) {
+                                BufferedReader br = new BufferedReader(new InputStreamReader(mSocketClient.getInputStream()));
+                                String content;
+                                if ((content = br.readLine()) != null) {
+                                    //复制到粘贴板
+                                    Message msg = new Message();
+                                    msg.what = COPY_TO_BOARD;
+                                    msg.obj = content;
+                                    mHandler.sendMessage(msg);
+                                    //发送到UI界面显示
+                                    content = mSocketClient.getInetAddress() + " : " + content + "\n";
+                                    msg.what = RECEIVE_SERVER_MSG;
+                                    msg.obj = content;
+                                    mHandler.sendMessage(msg);
+
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
 
     /**
      * 开启服务器
@@ -331,7 +427,7 @@ public class MainActivity extends Activity {
                             String inString = in.readLine();
                             Log.i(MainActivity.class.getSimpleName(), inString);
                             Message msg = new Message();
-                            msg.what = RECEIVE_SOCKET;
+                            msg.what = RECEIVE_CLIENT_MSG;
                             msg.obj = inString;
                             mHandler.sendMessage(msg);
                             //将接收到的消息发送给客户端
@@ -404,7 +500,7 @@ public class MainActivity extends Activity {
                 }
                 Log.i(TAG, this.str);
                 Message msg = new Message();
-                msg.what = RECEIVE_SOCKET;
+                msg.what = RECEIVE_CLIENT_MSG;
                 msg.obj = this.str;
                 mHandler.sendMessage(msg);
 

@@ -43,6 +43,7 @@ import de.greenrobot.event.ThreadMode;
 public class SocketService extends Service {
     private static final int COPY_TO_BOARD = 10086;
     private final int CLIENT_ENTER = 10087;
+    private final int SOCKET_ERR = 10088;
     private final String TAG = SocketService.class.getSimpleName();
     private boolean mServerStop = false;
     private ExecutorService mExecutorService;
@@ -58,16 +59,22 @@ public class SocketService extends Service {
                     ClipboardManager cb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                     if (!TextUtils.isEmpty(content)) {
                         cb.setText(content);
-                        Log.i(TAG, "复制到粘贴板...");
+                        Log.i(TAG, "复制到粘贴板: " + content);
                     }
                     break;
                 case CLIENT_ENTER:
                     String str = (String) msg.obj;
                     ToastUtils.shareInstance().show(SocketService.this, str);
                     break;
+                case SOCKET_ERR:
+                    String errMsg = (String) msg.obj;
+                    ToastUtils.shareInstance().show(SocketService.this, errMsg);
+                    break;
             }
         }
     };
+    private AsyncTask mServerTask;
+    private ServerSocket serverSocket;
 
 
     @Nullable
@@ -88,14 +95,35 @@ public class SocketService extends Service {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
         SharedPreferencesUtils.putBoolean(AppConfig.LOCAL_SERVER_ON, false);
+        //关闭客户端socket
+        for (Socket client : mClientList) {
+            try {
+                //告诉客户端，服务器关闭了
+
+                client.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        //关闭服务器socket
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //关闭线程池中的服务器线程
+        mExecutorService.shutdownNow();
+        //关闭服务器监听
+        mServerTask.cancel(true);
+        Log.i(TAG, "服务器关闭成功...");
+        ToastUtils.shareInstance().show(this, "服务器关闭成功");
     }
 
     private void initSocket() {
-
-        new AsyncTask() {
+        mServerTask = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] params) {
-                ServerSocket serverSocket = null;
+//                serverSocket = null;
                 try {
                     serverSocket = new ServerSocket(8888);
                     mExecutorService = Executors.newCachedThreadPool();  //创建线程池
@@ -114,6 +142,10 @@ public class SocketService extends Service {
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    Message msg = new Message();
+                    msg.what = SOCKET_ERR;
+                    msg.obj = e.getMessage();
+                    mHandler.sendMessage(msg);
                 }
                 return null;
             }
@@ -156,12 +188,22 @@ public class SocketService extends Service {
                     PrintStream printStream = new PrintStream(socket.getOutputStream());
                     printStream.println(content);
                     printStream.flush();
-                    content = socket.getInetAddress() + ": " + content;
+                    //复制到粘贴板
+                    Message msg = new Message();
+                    msg.what = COPY_TO_BOARD;
+                    msg.obj = content;
+                    mHandler.sendMessage(msg);
+                    //发送到UI界面显示
+                    content = socket.getInetAddress() + " : " + content;
                     sendContent(content);
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
+                Message msg = new Message();
+                msg.what = SOCKET_ERR;
+                msg.obj = socket.getInetAddress() + " 断开连接";
+                mHandler.sendMessage(msg);
             }
 
         }
@@ -177,11 +219,6 @@ public class SocketService extends Service {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-        Message msg = new Message();
-        msg.what = COPY_TO_BOARD;
-        msg.obj = content;
-        mHandler.sendMessage(msg);
 
     }
 
