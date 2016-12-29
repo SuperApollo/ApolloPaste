@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
     private static final int SOCKET_ENTER = 10091;
     private final int RECEIVE_SERVER_MSG = 10092;
     private final int COPY_TO_BOARD = 10093;
+    private final int SERVER_CLOSE_NOTICE = 10094;
     private boolean stop;
     private final String TAG = MainActivity.class.getSimpleName();
     private MyListview mLvContent;
@@ -82,7 +83,6 @@ public class MainActivity extends Activity {
     private ContentAdapter mAdapter;
     private boolean isServerOn;
     private ExecutorService mExecutor;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,6 +141,12 @@ public class MainActivity extends Activity {
                             cb.setText(copyContent);
                             Log.i(TAG, "复制到粘贴板..." + copyContent);
                         }
+                        break;
+                    case SERVER_CLOSE_NOTICE:
+                        String notice = (String) msg.obj;
+                        mToastUtils.show(mContext, notice);
+                        mConnectToServer = false;
+                        mBtnConnect.setText("连接");
                         break;
                 }
 
@@ -209,7 +215,6 @@ public class MainActivity extends Activity {
                 } else {//断开连接
                     noticeServer();
                     disConnctToServer();
-
                 }
 
             }
@@ -382,17 +387,26 @@ public class MainActivity extends Activity {
          * @param content
          */
         private void parseMessage(String content) {
-            //复制到粘贴板
-            Message msg = new Message();
-            msg.what = COPY_TO_BOARD;
-            msg.obj = content;
-            mHandler.sendMessage(msg);
-            //发送到UI界面显示
-            content = mSocketClient.getInetAddress() + " : " + content;
-            Message msg1 = new Message();
-            msg1.what = RECEIVE_SERVER_MSG;
-            msg1.obj = content;
-            mHandler.sendMessage(msg1);
+            if (content.startsWith("server_close")) {//服务器关闭通知
+                Message message = new Message();
+                message.what = SERVER_CLOSE_NOTICE;
+                message.obj = content.substring(12);
+                mHandler.sendMessage(message);
+
+            } else {//收到服务器的普通消息
+                //复制到粘贴板
+                Message msg = new Message();
+                msg.what = COPY_TO_BOARD;
+                msg.obj = content;
+                mHandler.sendMessage(msg);
+                //发送到UI界面显示
+                content = mSocketClient.getInetAddress() + " : " + content;
+                Message msg1 = new Message();
+                msg1.what = RECEIVE_SERVER_MSG;
+                msg1.obj = content;
+                mHandler.sendMessage(msg1);
+            }
+
 
         }
     }

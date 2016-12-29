@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.text.ClipboardManager;
@@ -23,9 +24,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -95,7 +100,10 @@ public class SocketService extends Service {
         for (Socket client : mClientList) {
             try {
                 //告诉客户端，服务器关闭了
-
+                PrintStream printStream = new PrintStream(client.getOutputStream());
+                String serverCloseNotice = "server_close" + getLocalIpAddress() + " 关闭了";
+                printStream.println(serverCloseNotice);
+                printStream.flush();
                 client.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -185,7 +193,6 @@ public class SocketService extends Service {
                     printStream.println(content);
                     printStream.flush();
                     parseMessage(content);
-
                 }
 
             } catch (Exception e) {
@@ -193,6 +200,7 @@ public class SocketService extends Service {
                 Message msg = new Message();
                 msg.what = SOCKET_ERR;
                 msg.obj = socket.getInetAddress() + " 断开连接";
+                Looper.prepare();
                 mHandler.sendMessage(msg);
             }
 
@@ -242,4 +250,28 @@ public class SocketService extends Service {
 //        ToastUtils.shareInstance().show(SocketService.this, notice.getNotice());
 //
 //    }
+
+    /**
+     * 获取本地IP
+     *
+     * @return
+     */
+    public static String getLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface
+                    .getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf
+                        .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
+                        return inetAddress.getHostAddress().toString();
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            Log.e("WifiPreference IpAddress", ex.toString());
+        }
+        return null;
+    }
 }
