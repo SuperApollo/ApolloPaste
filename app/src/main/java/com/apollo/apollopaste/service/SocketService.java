@@ -141,11 +141,11 @@ public class SocketService extends Service {
 
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    Message msg = new Message();
-                    msg.what = SOCKET_ERR;
-                    msg.obj = e.getMessage();
-                    mHandler.sendMessage(msg);
+//                    e.printStackTrace();
+//                    Message msg = new Message();
+//                    msg.what = SOCKET_ERR;
+//                    msg.obj = e.getMessage();
+//                    mHandler.sendMessage(msg);
                 }
                 return null;
             }

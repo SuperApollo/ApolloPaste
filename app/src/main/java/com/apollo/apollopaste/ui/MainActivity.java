@@ -140,7 +140,7 @@ public class MainActivity extends Activity {
                         ClipboardManager cb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                         if (!TextUtils.isEmpty(copyContent)) {
                             cb.setText(copyContent);
-                            Log.i(TAG, "复制到粘贴板...");
+                            Log.i(TAG, "复制到粘贴板..." + copyContent);
                         }
                         break;
                 }
@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
     protected void onStop() {
         super.onStop();
         //关闭线程池
-        if (mExecutor != null){
+        if (mExecutor != null) {
             mExecutor.shutdownNow();
             mExecutor = null;
         }
@@ -187,20 +187,15 @@ public class MainActivity extends Activity {
             mEtPort.setText(port + "");
 
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
-        mBtnStart.setText(isServerOn ? "关闭本地服务器" : "开启本地服务器");
+        mBtnStart.setText(AppUtil.isServiceRunning(mContext, SocketService.class.getName()) ? "关闭本地服务器" : "开启本地服务器");
         mEtSend = (EditText) findViewById(R.id.et_main_test);
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (AppUtil.isServiceRunning(mContext, SocketService.class.getName())) {
-                    //关闭本地服务器
-                    AppUtil.stopRunningService(mContext, SocketService.class.getName());
-                    mBtnStart.setText("开启本地服务器");
+                    startLocalserver();
                 } else {
-                    //打开本地服务器
-                    Intent intent = new Intent(mContext, SocketService.class);
-                    startService(intent);
-                    mBtnStart.setText("关闭本地服务器");
+                    closeLocalServer();
                 }
 
 
@@ -210,21 +205,10 @@ public class MainActivity extends Activity {
         mBtnConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!mConnectToServer) {
+                if (!mConnectToServer) {//连接
                     connectToServer();
                 } else {//断开连接
-                    if (mSocketClient != null) {
-                        try {
-                            mSocketClient.close();
-                            mConnectToServer = false;
-                            mBtnConnect.setText("连接");
-                            mToastUtils.show(mContext, "断开成功");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            mToastUtils.show(mContext, e.getMessage());
-                        }
-                    }
-
+                    disConnctToServer();
                 }
 
             }
@@ -242,6 +226,41 @@ public class MainActivity extends Activity {
 
 
         mTvShow.setText("本机地址：" + getLocalIpAddress() + " : 8888");
+    }
+
+    /**
+     * 客户端和服务器断开连接
+     */
+    private void disConnctToServer() {
+        if (mSocketClient != null) {
+            try {
+                mSocketClient.close();
+                mConnectToServer = false;
+                mBtnConnect.setText("连接");
+                mToastUtils.show(mContext, "断开成功");
+            } catch (IOException e) {
+                e.printStackTrace();
+                mToastUtils.show(mContext, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 打开本地服务器
+     */
+    private void closeLocalServer() {
+        Intent intent = new Intent(mContext, SocketService.class);
+        startService(intent);
+        mBtnStart.setText("关闭本地服务器");
+    }
+
+
+    /**
+     * 关闭本地服务器
+     */
+    private void startLocalserver() {
+        AppUtil.stopRunningService(mContext, SocketService.class.getName());
+        mBtnStart.setText("开启本地服务器");
     }
 
 
@@ -325,31 +344,35 @@ public class MainActivity extends Activity {
          */
         private void receiveMsg() {
             try {
-                while (true) {
-                    if (!mSocketClient.isConnected()) {
-                        if (mSocketClient.isConnected()) {
-                            if (!mSocketClient.isInputShutdown()) {
-                                BufferedReader br = new BufferedReader(new InputStreamReader(mSocketClient.getInputStream()));
-                                String content;
-                                if ((content = br.readLine()) != null) {
-                                    //复制到粘贴板
-                                    Message msg = new Message();
-                                    msg.what = COPY_TO_BOARD;
-                                    msg.obj = content;
-                                    mHandler.sendMessage(msg);
-                                    //发送到UI界面显示
-                                    content = mSocketClient.getInetAddress() + " : " + content + "\n";
-                                    msg.what = RECEIVE_SERVER_MSG;
-                                    msg.obj = content;
-                                    mHandler.sendMessage(msg);
+                if (!mSocketClient.isClosed()) {
+                    if (mSocketClient.isConnected()) {
+                        if (!mSocketClient.isInputShutdown()) {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(mSocketClient.getInputStream()));
+                            String content;
+                            while ((content = br.readLine()) != null) {
+                                //复制到粘贴板
+                                Message msg = new Message();
+                                msg.what = COPY_TO_BOARD;
+                                msg.obj = content;
+                                mHandler.sendMessage(msg);
+                                //发送到UI界面显示
+                                content = mSocketClient.getInetAddress() + " : " + content;
+                                Message msg1 = new Message();
+                                msg1.what = RECEIVE_SERVER_MSG;
+                                msg1.obj = content;
+                                mHandler.sendMessage(msg1);
 
-                                }
                             }
                         }
                     }
                 }
+
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
+//                Message msg = new Message();
+//                msg.what = SOCET_ERR;
+//                msg.obj = e.getMessage();
+//                mHandler.sendMessage(msg);
             }
 
         }
