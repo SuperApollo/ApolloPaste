@@ -17,6 +17,8 @@ import android.widget.TextView;
 
 import com.apollo.apollopaste.adapter.ContentAdapter;
 import com.apollo.apollopaste.bean.ContentBean;
+import com.apollo.apollopaste.constants.AppConfig;
+import com.apollo.apollopaste.utils.SharedPreferencesUtils;
 import com.apollo.apollopaste.widgets.MyListview;
 import com.apollo.apollopaste.widgets.MyScrollView;
 import com.apollo.apollopaste.widgets.MyTextView;
@@ -24,6 +26,9 @@ import com.apollo.apollopaste.R;
 import com.apollo.apollopaste.service.SocketService;
 import com.apollo.apollopaste.utils.ToastUtils;
 import com.apollo.apollopaste.base.BaseApplication;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -70,6 +75,7 @@ public class MainActivity extends Activity {
     private MyScrollView mScroll;
     private List<ContentBean> mDatas = new ArrayList<>();
     private ContentAdapter mAdapter;
+    private boolean isServerOn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,6 +133,7 @@ public class MainActivity extends Activity {
     }
 
     private void initView() {
+        isServerOn = SharedPreferencesUtils.getBoolean(AppConfig.LOCAL_SERVER_ON, false);
         mScroll = (MyScrollView) findViewById(R.id.scroll_main);
         mTvShow = (TextView) findViewById(R.id.tv_main_ip);
         mLvContent = (MyListview) findViewById(R.id.lv_main_content);
@@ -134,22 +141,27 @@ public class MainActivity extends Activity {
         mDatas.add(firstBean);
         mAdapter = new ContentAdapter(mDatas, this);
         mLvContent.setAdapter(mAdapter);
-
         mScroll.setChildView(mLvContent);
+
         mEtIp = (EditText) findViewById(R.id.et_main_ip);
         mEtPort = (EditText) findViewById(R.id.et_main_port);
+
         mBtnStart = (Button) findViewById(R.id.btn_main_server);
+        mBtnStart.setText(isServerOn ? "关闭本地服务器" : "开启本地服务器");
         mEtSend = (EditText) findViewById(R.id.et_main_test);
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                try {
-//                    startSocketServer();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-                Intent intent = new Intent(mContext, SocketService.class);
-                startService(intent);
+                isServerOn = SharedPreferencesUtils.getBoolean(AppConfig.LOCAL_SERVER_ON, false);
+                if (isServerOn) {//关闭本地服务器
+
+                    mBtnStart.setText("开启本地服务器");
+                } else {//打开本地服务器
+                    Intent intent = new Intent(mContext, SocketService.class);
+                    startService(intent);
+                    mBtnStart.setText("关闭本地服务器");
+                }
+
             }
         });
         mBtnConnect = (Button) findViewById(R.id.btn_main_connect);
@@ -442,7 +454,15 @@ public class MainActivity extends Activity {
      */
     @Subscribe(threadMode = ThreadMode.MainThread)
     public void helloEventBus(String message) {
-        ContentBean bean = new ContentBean(message);
+        String msg = "";
+        try {
+            JSONObject object = new JSONObject(message);
+            msg = object.getString("clientMsg");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        ContentBean bean = new ContentBean(msg);
         mDatas.add(bean);
         mAdapter.notifyDataSetChanged();
         if (mDatas.size() > 0)

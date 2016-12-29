@@ -47,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:background="@drawable/selector_button_start"
-                android:text="服务端(接收)"
+                android:text="开启本地服务器"
                 android:textColor="@color/colorWhite"
                 android:textSize="16sp" />
 
@@ -91,7 +91,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:background="@drawable/selector_button_start"
-                android:text="客户端(发送)"
+                android:text="本地客户端发送"
                 android:textColor="@color/colorWhite"
                 android:textSize="16sp" />
         </LinearLayout>

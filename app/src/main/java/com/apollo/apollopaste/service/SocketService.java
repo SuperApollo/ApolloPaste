@@ -12,7 +12,12 @@ import android.text.ClipboardManager;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.apollo.apollopaste.constants.AppConfig;
+import com.apollo.apollopaste.utils.SharedPreferencesUtils;
 import com.apollo.apollopaste.utils.ToastUtils;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -82,6 +87,7 @@ public class SocketService extends Service {
     public void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        SharedPreferencesUtils.putBoolean(AppConfig.LOCAL_SERVER_ON, false);
     }
 
     private void initSocket() {
@@ -113,6 +119,7 @@ public class SocketService extends Service {
             }
         }.execute();
         ToastUtils.shareInstance().show(this, "服务启动成功");
+        SharedPreferencesUtils.putBoolean(AppConfig.LOCAL_SERVER_ON, true);
     }
 
     /**
@@ -149,6 +156,7 @@ public class SocketService extends Service {
                     PrintStream printStream = new PrintStream(socket.getOutputStream());
                     printStream.println(content);
                     printStream.flush();
+                    content = socket.getInetAddress() + ": " + content;
                     sendContent(content);
                 }
 
@@ -160,9 +168,15 @@ public class SocketService extends Service {
     }
 
     private void sendContent(String content) {
-        Log.i(TAG, content);
         //发送到mainactivity显示
-        EventBus.getDefault().post(content);
+        JSONObject object = new JSONObject();
+        try {
+            object.put("clientMsg", content);
+            String json = object.toString();
+            EventBus.getDefault().post(json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         Message msg = new Message();
         msg.what = COPY_TO_BOARD;
