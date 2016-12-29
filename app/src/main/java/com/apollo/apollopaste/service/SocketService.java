@@ -13,11 +13,9 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.apollo.apollopaste.constants.AppConfig;
+import com.apollo.apollopaste.eventbean.ClientMessage;
 import com.apollo.apollopaste.utils.SharedPreferencesUtils;
 import com.apollo.apollopaste.utils.ToastUtils;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,8 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import de.greenrobot.event.EventBus;
-import de.greenrobot.event.Subscribe;
-import de.greenrobot.event.ThreadMode;
 
 /**
  * Created by zayh_yf20160909 on 2016/12/27.
@@ -86,14 +82,14 @@ public class SocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        EventBus.getDefault().register(this);
+//        EventBus.getDefault().register(this);
         initSocket();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        EventBus.getDefault().unregister(this);
+//        EventBus.getDefault().unregister(this);
         SharedPreferencesUtils.putBoolean(AppConfig.LOCAL_SERVER_ON, false);
         //关闭客户端socket
         for (Socket client : mClientList) {
@@ -188,14 +184,8 @@ public class SocketService extends Service {
                     PrintStream printStream = new PrintStream(socket.getOutputStream());
                     printStream.println(content);
                     printStream.flush();
-                    //复制到粘贴板
-                    Message msg = new Message();
-                    msg.what = COPY_TO_BOARD;
-                    msg.obj = content;
-                    mHandler.sendMessage(msg);
-                    //发送到UI界面显示
-                    content = socket.getInetAddress() + " : " + content;
-                    sendContent(content);
+                    parseMessage(content);
+
                 }
 
             } catch (Exception e) {
@@ -207,30 +197,49 @@ public class SocketService extends Service {
             }
 
         }
-    }
 
-    private void sendContent(String content) {
-        //发送到mainactivity显示
-        JSONObject object = new JSONObject();
-        try {
-            object.put("clientMsg", content);
-            String json = object.toString();
-            EventBus.getDefault().post(json);
-        } catch (JSONException e) {
-            e.printStackTrace();
+        /**
+         * 解析json
+         *
+         * @param content
+         */
+        private void parseMessage(String content) {
+            if (content.startsWith("client_offline")) {//客户端下线通知
+                ToastUtils.shareInstance().show(SocketService.this, content);
+            } else {//普通客户端消息
+                //复制到粘贴板
+                Message msg = new Message();
+                msg.what = COPY_TO_BOARD;
+                msg.obj = content;
+                mHandler.sendMessage(msg);
+                //发送到UI界面显示
+                content = socket.getInetAddress() + " : " + content;
+                sendContent(content);
+            }
+
+
         }
-
     }
 
     /**
-     * 定义订阅者，接收eventbus发布者的消息
+     * 发送到mainactivity显示
      *
-     * @param stop
+     * @param content
      */
-    @Subscribe(threadMode = ThreadMode.MainThread)
-    public void helloEventBus(String stop) {
-        mServerStop = TextUtils.equals("1", stop) ? true : false;
-        if (mServerStop)
-            Log.i(TAG, "服务器停止...");
+    private void sendContent(String content) {
+        ClientMessage clientMessage = new ClientMessage(content);
+        EventBus.getDefault().post(clientMessage);
+
     }
+
+//    /**
+//     * 定义订阅者，接收eventbus发布者的消息
+//     *
+//     * @param notice
+//     */
+//    @Subscribe(threadMode = ThreadMode.MainThread)
+//    public void receiveClientOfflineNotice(ClientOfflineNotice notice) {
+//        ToastUtils.shareInstance().show(SocketService.this, notice.getNotice());
+//
+//    }
 }

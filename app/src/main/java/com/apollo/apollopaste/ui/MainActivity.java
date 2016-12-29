@@ -15,26 +15,25 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.apollo.apollopaste.R;
 import com.apollo.apollopaste.adapter.ContentAdapter;
+import com.apollo.apollopaste.base.BaseApplication;
 import com.apollo.apollopaste.bean.ContentBean;
 import com.apollo.apollopaste.constants.AppConfig;
+import com.apollo.apollopaste.eventbean.ClientMessage;
+import com.apollo.apollopaste.service.SocketService;
 import com.apollo.apollopaste.utils.AppUtil;
 import com.apollo.apollopaste.utils.SharedPreferencesUtils;
+import com.apollo.apollopaste.utils.ToastUtils;
 import com.apollo.apollopaste.widgets.MyListview;
 import com.apollo.apollopaste.widgets.MyScrollView;
-import com.apollo.apollopaste.R;
-import com.apollo.apollopaste.service.SocketService;
-import com.apollo.apollopaste.utils.ToastUtils;
-import com.apollo.apollopaste.base.BaseApplication;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -208,7 +207,9 @@ public class MainActivity extends Activity {
                 if (!mConnectToServer) {//连接
                     connectToServer();
                 } else {//断开连接
+                    noticeServer();
                     disConnctToServer();
+
                 }
 
             }
@@ -217,15 +218,25 @@ public class MainActivity extends Activity {
         mBtnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mConnectToServer)
-                    sendMsg();
-                else
+                if (mConnectToServer) {
+                    String sendMsg = mEtSend.getText().toString().trim();
+                    sendMsg(sendMsg);
+                } else
                     mToastUtils.show(mContext, "请先连接服务器");
             }
         });
 
 
         mTvShow.setText("本机地址：" + getLocalIpAddress() + " : 8888");
+    }
+
+    /**
+     * 通知服务端我断开连接
+     */
+    private void noticeServer() {
+        String notice = mSocketClient.getInetAddress() + " 断开连接";
+        notice = "client_offline" + notice;
+        sendMsg(notice);
     }
 
     /**
@@ -267,14 +278,13 @@ public class MainActivity extends Activity {
     /**
      * 客户端发消息
      */
-    private void sendMsg() {
-        final String sendMsg = mEtSend.getText().toString().trim();
-        //从Socket对象获得输出流
+    private void sendMsg(String msg) {
         try {
             if (mSocketClient != null && mSocketClient.isConnected()) {
-                java.io.OutputStream outputStream = mSocketClient.getOutputStream();
+                //从Socket对象获得输出流
+                OutputStream outputStream = mSocketClient.getOutputStream();
                 PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream, "GB2312")));
-                out.println(sendMsg);
+                out.println(msg);
                 out.flush();
                 mEtSend.setText("");
             } else {
@@ -350,18 +360,7 @@ public class MainActivity extends Activity {
                             BufferedReader br = new BufferedReader(new InputStreamReader(mSocketClient.getInputStream()));
                             String content;
                             while ((content = br.readLine()) != null) {
-                                //复制到粘贴板
-                                Message msg = new Message();
-                                msg.what = COPY_TO_BOARD;
-                                msg.obj = content;
-                                mHandler.sendMessage(msg);
-                                //发送到UI界面显示
-                                content = mSocketClient.getInetAddress() + " : " + content;
-                                Message msg1 = new Message();
-                                msg1.what = RECEIVE_SERVER_MSG;
-                                msg1.obj = content;
-                                mHandler.sendMessage(msg1);
-
+                                parseMessage(content);
                             }
                         }
                     }
@@ -374,6 +373,26 @@ public class MainActivity extends Activity {
 //                msg.obj = e.getMessage();
 //                mHandler.sendMessage(msg);
             }
+
+        }
+
+        /**
+         * 解析json
+         *
+         * @param content
+         */
+        private void parseMessage(String content) {
+            //复制到粘贴板
+            Message msg = new Message();
+            msg.what = COPY_TO_BOARD;
+            msg.obj = content;
+            mHandler.sendMessage(msg);
+            //发送到UI界面显示
+            content = mSocketClient.getInetAddress() + " : " + content;
+            Message msg1 = new Message();
+            msg1.what = RECEIVE_SERVER_MSG;
+            msg1.obj = content;
+            mHandler.sendMessage(msg1);
 
         }
     }
@@ -572,15 +591,8 @@ public class MainActivity extends Activity {
      * @param message
      */
     @Subscribe(threadMode = ThreadMode.MainThread)
-    public void helloEventBus(String message) {
-        String msg = "";
-        try {
-            JSONObject object = new JSONObject(message);
-            msg = object.getString("clientMsg");
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    public void receiveClientMsg(ClientMessage message) {
+        String msg = message.getMessage();
         ContentBean bean = new ContentBean(msg);
         mDatas.add(bean);
         mAdapter.notifyDataSetChanged();
